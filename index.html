@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html><head>
+  <title>Resources map</title>
+  <meta name="viewport" content="initial-scale=1.0">
+  <meta charset="utf-8">
+
+  <link rel="stylesheet" href="css/main_style.css" type="text/css">
+  <link rel="stylesheet" href="css/buttons.css" type="text/css">
+  <link rel="stylesheet" href="css/map_controls.css" type="text/css">
+  <link rel="stylesheet" href="css/dialogs.css" type="text/css">
+
+  <script src="https://maps.googleapis.com/maps/api/js?libraries=places"></script>
+  <script src="js/geolocation.js"></script>
+  <script src="js/geolocui.js"></script>
+  <script src="js/dragscroll.js"></script>
+
+  <script>
+    var map;
+    var HMoverlay;
+    var Mines = [];
+    var MineInfoWindow = [];
+    var cntMines;
+    var selectedResID = 0;
+
+    var mineName = ['Clay','Limestone','Gravel','Coal','Iron Ore','Crude Oil','Quartz Sand','Chalcopyrite',
+                    'Bauxite','Lithium Ore','Ilmenite','Silver Ore','Gold Ore','Rough Diamonds'];
+    var mineProd = [1530, 510, 542, 510, 382.5, 306, 765, 408, 306, 2040, 280.5, 637.5, 2040, 1275];
+    var mineDim = ['m<sup>3</sup>/h', 'm<sup>3</sup>/h'];
+
+    var Moscow = new google.maps.LatLng(55.7507304, 37.617887);
+
+    var tmpMine = new google.maps.Circle({
+      strokeColor: '#000000',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+//    fillColor: '#FF0000',
+//    fillOpacity: 0.35,
+      radius: 15,
+      clickable: false,
+      draggable: true
+    });
+
+
+function initMap() {
+    map = new google.maps.Map(document.getElementById('map_canvas'), {
+        zoom: 16,
+        center: Moscow,
+        streetViewControl: false,
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        draggableCursor: "crosshair",
+        zoomControlOptions: {position: google.maps.ControlPosition.RIGHT_CENTER}
+    });
+
+
+    posGeoloc(map);
+
+    // Create the search box and link it to the UI element.
+    var input = document.getElementById('pac-input');
+    var searchBox = new google.maps.places.SearchBox(input);
+    map.controls[google.maps.ControlPosition.RIGHT_TOP].push(input);
+
+    // Create the custom geolocation control
+    var geoLocationControlDiv = document.createElement('div');
+    var geoLocationControl = new GeoLocationControl(geoLocationControlDiv, map);
+    map.controls[google.maps.ControlPosition.RIGHT_TOP].push(geoLocationControlDiv);
+
+
+    map.addListener('click', function(e) {set_tmpMine(e.latLng)} );
+
+    searchBox.addListener('places_changed', function() {
+                                    var places = searchBox.getPlaces();
+
+                                    if (places.length == 0) {
+                                    return;
+                                    }
+
+                                    map.setCenter(places[0].geometry.location);
+                                    set_tmpMine(places[0].geometry.location);
+
+    });
+
+}
+
+function set_tmpMine(pos) {
+        tmpMine.setMap(map);
+        tmpMine.setCenter(pos);
+        tmpMine.quality = getQuality(tmpMine.getBounds().getCenter());
+        InfoBarUpdate();
+}
+
+function InfoBarUpdate() {
+        var infoBar = document.getElementById('info_bar');
+        var placeBtn = document.getElementById('place_btn');
+        if (tmpMine.getMap() != null) {
+          if (tmpMine.quality > 0) {
+            infoBar.style.color = 'white';
+            infoBar.innerHTML = "Expected quantity: " + Math.round(tmpMine.quality * mineProd[selectedResID] * 10)/10 + "m<sup>3</sup>/h<br>" + 
+                                "Expected quality: " + Math.round(tmpMine.quality * 10000)/100 + "%";
+            placeBtn.style.backgroundImage = 'url(img/place_btn_on.png)';
+          } else {
+            infoBar.style.color = 'yellow';
+            infoBar.innerHTML = "No deposits at the scanned position";
+            placeBtn.style.backgroundImage = 'url(img/place_btn_off.png)';
+        }
+        } else {
+            infoBar.innerHTML = "";
+            placeBtn.style.backgroundImage = 'url(img/place_btn_off.png)';
+        }
+}
+
+function getQuality(pnt) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', "http://res.anti3z.ru/rescalc" + "?type=point" +
+                        "&lng=" + pnt.lng().toFixed(6) + "&lat=" + pnt.lat().toFixed(6) +
+                        "&resID=" + selectedResID, false);
+        xhr.send();
+        return xhr.responseText;
+}
+
+function addMine(pnt, quality, resID) {
+        var srcImage = "img/m_" + resID + ".png";
+        var crclMine = new google.maps.Circle({
+            radius: 15,
+            center: pnt
+        });
+
+        Mineoverlay = new google.maps.GroundOverlay(srcImage, crclMine.getBounds());
+        Mineoverlay.setMap(map);
+
+        cntMines = Mines.push(Mineoverlay);
+        Mines[cntMines-1].resID = resID;
+        Mines[cntMines-1].quality = quality;
+        Mines[cntMines-1].product = Mines[cntMines-1].quality * mineProd[Mines[cntMines-1].resID];
+
+        if (MineInfoWindow.push(new google.maps.InfoWindow()) != cntMines) { alert("Ошибка: MineInfoWindow.push!!!");
+        } else {
+          MineInfoWindow[cntMines-1].setPosition(Mines[cntMines-1].getBounds().getCenter());
+          MineInfoWindow[cntMines-1].setContent("<b>" + mineName[Mines[cntMines-1].resID] + "</b><br>" +
+                                                "Qual: " + Math.round(Mines[cntMines-1].quality * 10000)/100 + "%" + "<br>" +
+                                                "Prod: " + Math.round(Mines[cntMines-1].product * 10) / 10. + "m<sup>3</sup>/h" + "<br>" +
+                                                "x5.05 Prod: " + Math.round(Mines[cntMines-1].product * 50.5) / 10. + "m<sup>3</sup>/h" + "<br>" +
+                                                "LatLng: " + Mines[cntMines-1].getBounds().getCenter().toUrlValue() + "<br><" +
+                                                "a href='javascript:deleteMine(" + (cntMines-1) + ");'>Delete</a>"
+                                                );
+        }
+
+        Mineoverlay.addListener('click', function (e) {
+              for (var i = 0; i < cntMines; i++) {
+                if (Mines[i].getBounds().contains(e.latLng)) MineInfoWindow[i].open(map, Mines[i]);
+              }
+        });
+}
+
+
+function deleteMine(indx) {
+
+        Mines[indx].setMap(null);
+        MineInfoWindow[indx].close;
+
+        Mines.splice(indx,1);
+        MineInfoWindow.splice(indx,1);
+
+        cntMines -= 1;
+}
+
+function PlaceClick_handler () {
+        if (tmpMine.getMap() && tmpMine.quality > 0) {
+            addMine(tmpMine.getBounds().getCenter(), tmpMine.quality, selectedResID);
+            tmpMine.setMap(null);
+            InfoBarUpdate();
+        }
+}
+
+
+function ScanClick_handler () {
+
+        if (HMoverlay != null) HMoverlay.setMap(null);
+
+        var canvasW = document.getElementById('map_canvas').offsetWidth;
+        var canvasH = document.getElementById('map_canvas').offsetHeight;
+        var mapBoundsNE = map.getBounds().getNorthEast();
+        var mapBoundsSW = map.getBounds().getSouthWest();
+        var srcImage = "http://res.anti3z.ru/rescalc" + "?type=map" +
+                      "&width=" + canvasW + "&height=" + canvasH +
+                      "&north=" + mapBoundsNE.lat().toFixed(6) +
+                      "&south=" + mapBoundsSW.lat().toFixed(6) +
+                      "&west=" + mapBoundsSW.lng().toFixed(6) +
+                      "&east=" + mapBoundsNE.lng().toFixed(6) +
+                      "&resID=" + selectedResID;
+
+        HMoverlay = new google.maps.GroundOverlay(srcImage, map.getBounds(), {clickable: false});
+
+        HMoverlay.setMap(map);
+}
+
+
+
+function ResClick_handler(){
+        var item = document.getElementById("res_selector_bar");
+        if (item.style.visibility == 'hidden') {item.style.visibility = 'visible';}
+        else item.style.visibility = 'hidden';
+}
+
+function ResSelectClick_handler(resID){
+        if (resID != selectedResID) {
+            document.getElementById('res_btn').style.backgroundImage = 'url(img/r_' + resID + '.png)';
+            var btnText = document.getElementById('res_btn_text');
+            btnText.innerHTML = mineName[resID];
+            if (resID == 13) {btnText.style.height = '25px';}
+            else btnText.style.height = '14px';
+            selectedResID = resID;
+            if (tmpMine.getMap() != null) {tmpMine.quality = getQuality(tmpMine.getBounds().getCenter());}
+            if (HMoverlay != null) HMoverlay.setMap(null);
+            InfoBarUpdate();
+        }
+        document.getElementById("res_selector_bar").style.visibility = 'hidden';
+}
+
+function ToolsClick_handler(){
+      var item = document.getElementById("tool_selector_bar");
+      if (item.style.visibility == 'hidden') {item.style.visibility = 'visible';}
+      else item.style.visibility = 'hidden';
+}
+
+
+function SaveClick_handler() {
+      document.getElementById("tool_selector_bar").style.visibility = 'hidden';
+}
+
+function LoadClick_handler() {
+      document.getElementById("tool_selector_bar").style.visibility = 'hidden';
+}
+
+function InfoClick_handler () {
+      var TotalProd = [0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+      var TotalCnt = [0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+
+      //Проходим по всем установленным шахтам
+      for (var i = 0; i < cntMines; i++) {
+        //Если шахта в пределах видимой карты - считаем продукцию
+        if (map.getBounds().contains(Mines[i].getBounds().getCenter())) {
+          TotalProd[Mines[i].resID] += Mines[i].product;
+          TotalCnt[Mines[i].resID] += 1;
+        }
+      }
+
+      var txtResult = "<b>In Total:</b><br>";
+      //Для каждого типа шахты
+      for (var j = 0; j <=13; j++) {
+        if (TotalCnt[j] > 0) {
+          txtResult = txtResult + "<b>" + mineName[j] + "</b>: " + Math.round(TotalProd[j] * 10 ) / 10. + "m<sup>3</sup>/h from " + TotalCnt[j] + " mines (avg:" + Math.round(TotalProd[j] * 10 / TotalCnt[j]) / 10. + "m<sup>3</sup>/h per mine)<br>";
+        }
+      }
+
+      var iWin = new google.maps.InfoWindow();
+      iWin.setPosition(map.getBounds().getCenter());
+      iWin.setContent(txtResult);
+      iWin.open(map);
+
+      document.getElementById("tool_selector_bar").style.visibility = 'hidden';
+
+}
+
+function AutoPlaceClick_handler () {
+      if (map.getZoom() >= 16) {
+        var xhr = new XMLHttpRequest();
+        var mapBoundsNE = map.getBounds().getNorthEast();
+        var mapBoundsSW = map.getBounds().getSouthWest();
+
+        xhr.open('GET', "http://res.anti3z.ru/rescalc" + "?type=array" +
+                  "&north=" + mapBoundsNE.lat().toFixed(6) +
+                  "&south=" + mapBoundsSW.lat().toFixed(6) +
+                  "&west=" + mapBoundsSW.lng().toFixed(6) +
+                  "&east=" + mapBoundsNE.lng().toFixed(6) +
+                  "&resID=" + selectedResID, false);
+        xhr.send();
+        if (xhr.responseText != null) {
+        var strResult = xhr.responseText.split(";");
+          for (var i = 0; i < (strResult.length-1); i++) {
+            strMine = strResult[i].split(',');
+            addMine((new google.maps.LatLng(strMine[0], strMine[1])), strMine[2], strMine[3]);
+          }
+        }
+      } else alert("Too large map site. Zoom in.");
+
+      document.getElementById("tool_selector_bar").style.visibility = 'hidden';
+
+}
+
+
+  google.maps.event.addDomListener(window, 'load', initMap);
+
+  </script>
+
+</head>
+
+<body>
+
+    <div id="map_canvas"></div>
+    <div id="info_bar"></div>
+    <div id="bottom_menu">
+        <div style="width:100%; height:1px; clear:both;"></div>
+        <div class="button_box" id="place_btn" onclick=PlaceClick_handler()></div>
+        <div class="button_box" id="res_btn" onclick=ResClick_handler()><div class="res_btn_name" id="res_btn_text">Clay</div></div>
+        <div class="button_box" id="tools_btn" onclick=ToolsClick_handler()>Tools Menu</div>
+        <div class="button_box" id="scan_btn" onclick=ScanClick_handler()>
+          <a style="vertical-align: middle; font: bold 13px Arial; color: white;">Scan location<br>
+          (Costs: FREE!)</a>
+        </div>
+
+        <div style="width:100%; height:1px; clear:both;"></div>
+    </div>
+
+    <div class="buttons_bar dragscroll" id="tool_selector_bar" style="right: 80px; height: 301px; visibility: hidden;">
+        <div class="button_box" style="background-color: blue;" onclick=SaveClick_handler()>Save Mines</div>
+        <div class="button_box" style="background-color: red;" onclick=LoadClick_handler()>Load Mines</div>
+        <div class="button_box" style="background-color: yellow;" onclick=InfoClick_handler()>Placed Mines Info!</div>
+        <div class="button_box" style="background-color: green;" onclick=AutoPlaceClick_handler()>Autoplace Mines!</div>
+    </div>
+
+    <div class="buttons_bar dragscroll" id="res_selector_bar" style="right: 2px; height: 500px; visibility: hidden;">
+        <div class="button_box" id="res_btn_13" onclick=ResSelectClick_handler(13)><div class="res_btn_name" style="height: 25px">Rough Diamonds</div></div>
+        <div class="button_box" id="res_btn_12" onclick=ResSelectClick_handler(12)><div class="res_btn_name">Gold Ore</div></div>
+        <div class="button_box" id="res_btn_11" onclick=ResSelectClick_handler(11)><div class="res_btn_name">Silver Ore</div></div>
+        <div class="button_box" id="res_btn_10" onclick=ResSelectClick_handler(10)><div class="res_btn_name">Ilmenite</div></div>
+        <div class="button_box" id="res_btn_9" onclick=ResSelectClick_handler(9)><div class="res_btn_name">Lithium Ore</div></div>
+        <div class="button_box" id="res_btn_8" onclick=ResSelectClick_handler(8)><div class="res_btn_name">Bauxite</div></div>
+        <div class="button_box" id="res_btn_7" onclick=ResSelectClick_handler(7)><div class="res_btn_name">Chalcopyrite</div></div>
+        <div class="button_box" id="res_btn_6" onclick=ResSelectClick_handler(6)><div class="res_btn_name">Quartz Sand</div></div>
+        <div class="button_box" id="res_btn_5" onclick=ResSelectClick_handler(5)><div class="res_btn_name">Crude Oil</div></div>
+        <div class="button_box" id="res_btn_4" onclick=ResSelectClick_handler(4)><div class="res_btn_name">Iron Ore</div></div>
+        <div class="button_box" id="res_btn_3" onclick=ResSelectClick_handler(3)><div class="res_btn_name">Coal</div></div>
+        <div class="button_box" id="res_btn_2" onclick=ResSelectClick_handler(2)><div class="res_btn_name">Gravel</div></div>
+        <div class="button_box" id="res_btn_1" onclick=ResSelectClick_handler(1)><div class="res_btn_name">Limestone</div></div>
+        <div class="button_box" id="res_btn_0" onclick=ResSelectClick_handler(0)><div class="res_btn_name">Clay</div></div>
+    </div>
+
+    <div id="SaveDlg" class="modalDialog">
+      <div>
+            <a href="#close" title="Закрыть" class="close">X</a>
+            <h2>Модальное окно</h2> 
+            <p>Пример простого модального окна, которое может быть создано с использованием CSS3.</p>
+            <p>Его можно использовать в широком диапазоне, начиная от вывода сообщений и заканчивая формой регистрации.</p>
+      </div>
+    </div>
+
+
+    <input id="pac-input" class="controls" type="text" placeholder="Search">
+</body>
+
+</html>
