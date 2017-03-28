@@ -131,6 +131,7 @@ function addMine(pnt, quality, resID) {
         Mines[cntMines-1].resID = resID;
         Mines[cntMines-1].quality = quality;
         Mines[cntMines-1].product = Mines[cntMines-1].quality * mineProd[Mines[cntMines-1].resID];
+        Mines[cntMines-1].hash = generateID();
 
         if (MineInfoWindow.push(new google.maps.InfoWindow()) != cntMines) { alert("Ошибка: MineInfoWindow.push!!!");
         } else {
@@ -140,7 +141,7 @@ function addMine(pnt, quality, resID) {
                                                 "Prod: " + Math.round(Mines[cntMines-1].product * 10) / 10. + "m<sup>3</sup>/h" + "<br>" +
                                                 "x5.05 Prod: " + Math.round(Mines[cntMines-1].product * 50.5) / 10. + "m<sup>3</sup>/h" + "<br>" +
                                                 "LatLng: " + Mines[cntMines-1].getBounds().getCenter().toUrlValue() + "<br><" +
-                                                "a href='javascript:deleteMine(" + (cntMines-1) + ");'>Delete</a>"
+                                                "a href='javascript:deleteMine(" + '"' + Mines[cntMines-1].hash + '"' + ");'>Delete</a>"
                                                 );
         }
 
@@ -151,16 +152,30 @@ function addMine(pnt, quality, resID) {
         });
 }
 
+function generateID() {
+        _sym = 'abcdefghijklmnopqrstuvwxyz1234567890';
+        str = '';
+        for(var i = 0; i < 8; i++) {
+            str += _sym[parseInt(Math.random() * (_sym.length))];
+        }
 
-function deleteMine(indx) {
+        return str;
+}
 
-        Mines[indx].setMap(null);
-        MineInfoWindow[indx].close;
 
-        Mines.splice(indx,1);
-        MineInfoWindow.splice(indx,1);
+function deleteMine(hash) {
+        for (var i = 0; i < Mines.length; i++){
+            if (Mines[i].hash == hash){
+                Mines[i].setMap(null);
+                MineInfoWindow[i].close;
 
-        cntMines -= 1;
+                Mines.splice(i,1);
+                MineInfoWindow.splice(i,1);
+
+                cntMines -= 1;
+                break
+            }
+        }
 }
 
 function PlaceClick_handler () {
