@@ -110,7 +110,7 @@ function InfoBarUpdate() {
 
 function getQuality(pnt) {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', "/rescalc" + "?type=point" +
+        xhr.open('GET', "http://res.anti3z.ru/rescalc" + "?type=point" +
                         "&lng=" + pnt.lng().toFixed(6) + "&lat=" + pnt.lat().toFixed(6) +
                         "&resID=" + selectedResID, false);
         xhr.send();
@@ -195,7 +195,7 @@ function ScanClick_handler () {
         var canvasH = document.getElementById('map_canvas').offsetHeight;
         var mapBoundsNE = map.getBounds().getNorthEast();
         var mapBoundsSW = map.getBounds().getSouthWest();
-        var srcImage = "/rescalc" + "?type=map" +
+        var srcImage = "http://res.anti3z.ru/rescalc" + "?type=map" +
                       "&width=" + canvasW + "&height=" + canvasH +
                       "&north=" + mapBoundsNE.lat().toFixed(6) +
                       "&south=" + mapBoundsSW.lat().toFixed(6) +
@@ -282,7 +282,7 @@ function AutoPlaceClick_handler () {
         var mapBoundsNE = map.getBounds().getNorthEast();
         var mapBoundsSW = map.getBounds().getSouthWest();
 
-        xhr.open('GET', "/rescalc" + "?type=array" +
+        xhr.open('GET', "http://res.anti3z.ru/rescalc" + "?type=array" +
                   "&north=" + mapBoundsNE.lat().toFixed(6) +
                   "&south=" + mapBoundsSW.lat().toFixed(6) +
                   "&west=" + mapBoundsSW.lng().toFixed(6) +
