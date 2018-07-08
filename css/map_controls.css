@@ -46,3 +46,26 @@
    background-image: url("../img/Maps-Define-Location-icon.png");
    background-size: cover;
 }
+
+.locButton {
+    background-color: #fff;
+    border: none;
+    outline: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 2px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    margin-right: 10px;
+    padding: 0px;
+}
+
+.locIcon {
+    margin: 5px;
+    width: 18px;
+    height: 18px;
+    background-image:  url("../img/mylocation-sprite-1x.png");
+    background-size: 180px 18px;
+    background-position: 0px 0px;
+    background-repeat: no-repeat;
+}

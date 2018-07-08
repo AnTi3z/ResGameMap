@@ -10,8 +10,7 @@
   <link rel="stylesheet" href="css/dialogs.css" type="text/css">
 
   <script src="https://maps.googleapis.com/maps/api/js?libraries=places"></script>
-  <script src="js/geolocation.js"></script>
-  <script src="js/geolocui.js"></script>
+  <script src="js/geoloc.js"></script>
   <script src="js/dragscroll.js"></script>
 
   <script>
@@ -46,22 +45,22 @@ function initMap() {
         zoom: 16,
         center: Moscow,
         streetViewControl: false,
+        fullscreenControl: false,
         mapTypeId: google.maps.MapTypeId.ROADMAP,
         draggableCursor: "crosshair",
         zoomControlOptions: {position: google.maps.ControlPosition.RIGHT_CENTER}
     });
 
-
-    posGeoloc(map);
+    centerMapOnLocation(map);
 
     // Create the search box and link it to the UI element.
     var input = document.getElementById('pac-input');
     var searchBox = new google.maps.places.SearchBox(input);
-    map.controls[google.maps.ControlPosition.RIGHT_TOP].push(input);
+    map.controls[google.maps.ControlPosition.TOP_RIGHT].push(input);
 
     // Create the custom geolocation control
     var geoLocationControlDiv = document.createElement('div');
-    var geoLocationControl = new GeoLocationControl(geoLocationControlDiv, map);
+    var geoLocationControl = new MyLocationButton(geoLocationControlDiv, map);
     map.controls[google.maps.ControlPosition.RIGHT_TOP].push(geoLocationControlDiv);
 
 
@@ -110,7 +109,7 @@ function InfoBarUpdate() {
 
 function getQuality(pnt) {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', "http://res.anti3z.ru/rescalc" + "?type=point" +
+        xhr.open('GET', "https://res.anti3z.ru/rescalc" + "?type=point" +
                         "&lng=" + pnt.lng().toFixed(6) + "&lat=" + pnt.lat().toFixed(6) +
                         "&resID=" + selectedResID, false);
         xhr.send();
@@ -195,7 +194,7 @@ function ScanClick_handler () {
         var canvasH = document.getElementById('map_canvas').offsetHeight;
         var mapBoundsNE = map.getBounds().getNorthEast();
         var mapBoundsSW = map.getBounds().getSouthWest();
-        var srcImage = "http://res.anti3z.ru/rescalc" + "?type=map" +
+        var srcImage = "https://res.anti3z.ru/rescalc" + "?type=map" +
                       "&width=" + canvasW + "&height=" + canvasH +
                       "&north=" + mapBoundsNE.lat().toFixed(6) +
                       "&south=" + mapBoundsSW.lat().toFixed(6) +
@@ -282,7 +281,7 @@ function AutoPlaceClick_handler () {
         var mapBoundsNE = map.getBounds().getNorthEast();
         var mapBoundsSW = map.getBounds().getSouthWest();
 
-        xhr.open('GET', "http://res.anti3z.ru/rescalc" + "?type=array" +
+        xhr.open('GET', "https://res.anti3z.ru/rescalc" + "?type=array" +
                   "&north=" + mapBoundsNE.lat().toFixed(6) +
                   "&south=" + mapBoundsSW.lat().toFixed(6) +
                   "&west=" + mapBoundsSW.lng().toFixed(6) +
@@ -353,9 +352,9 @@ function AutoPlaceClick_handler () {
     <div id="SaveDlg" class="modalDialog">
       <div>
             <a href="#close" title="Закрыть" class="close">X</a>
-            <h2>Модальное окно</h2> 
-            <p>Пример простого модального окна, которое может быть создано с использованием CSS3.</p>
-            <p>Его можно использовать в широком диапазоне, начиная от вывода сообщений и заканчивая формой регистрации.</p>
+            <h2>Карта ресурсов игры Resources Game (resources-game.ch)</h2>
+            <p>https://res.anti3z.ru</p>
+            <p>#карта</p>
       </div>
     </div>
 
