@@ -218,6 +218,7 @@ function ResClick_handler(){
 function ResSelectClick_handler(resID){
         if (resID != selectedResID) {
             document.getElementById('res_btn').style.backgroundImage = 'url(img/r_' + resID + '.png)';
+            document.getElementById('autoplace_res_img').src = "img/m_" + resID + ".png";
             var btnText = document.getElementById('res_btn_text');
             btnText.innerHTML = mineName[resID];
             if (resID == 13) {btnText.style.height = '25px';}
@@ -239,6 +240,12 @@ function ToolsClick_handler(){
 
 function SaveClick_handler() {
       document.getElementById("tool_selector_bar").style.visibility = 'hidden';
+}
+
+function QualitySlider_handler() {
+      sliderValue = document.getElementById("qual_slider").value;
+      txt = document.getElementById("qual_text");
+      txt.innerHTML = sliderValue+ "%";
 }
 
 function LoadClick_handler() {
@@ -280,13 +287,14 @@ function AutoPlaceClick_handler () {
         var xhr = new XMLHttpRequest();
         var mapBoundsNE = map.getBounds().getNorthEast();
         var mapBoundsSW = map.getBounds().getSouthWest();
+        var minQual = document.getElementById("qual_slider").value / 100.0;
 
         xhr.open('GET', "https://res.anti3z.ru/rescalc" + "?type=array" +
                   "&north=" + mapBoundsNE.lat().toFixed(6) +
                   "&south=" + mapBoundsSW.lat().toFixed(6) +
                   "&west=" + mapBoundsSW.lng().toFixed(6) +
                   "&east=" + mapBoundsNE.lng().toFixed(6) +
-                  "&resID=" + selectedResID, false);
+                  "&resID=" + selectedResID + "&min=" + minQual, false);
         xhr.send();
         if (xhr.responseText != null) {
         var strResult = xhr.responseText.split(";");
@@ -298,7 +306,7 @@ function AutoPlaceClick_handler () {
       } else alert("Too large map site. Zoom in.");
 
       document.getElementById("tool_selector_bar").style.visibility = 'hidden';
-
+      window.open("#close","_self")
 }
 
 
@@ -329,7 +337,7 @@ function AutoPlaceClick_handler () {
         <div class="button_box" style="background-color: blue;" onclick=SaveClick_handler()>Save Mines</div>
         <div class="button_box" style="background-color: red;" onclick=LoadClick_handler()>Load Mines</div>
         <div class="button_box" style="background-color: yellow;" onclick=InfoClick_handler()>Placed Mines Info!</div>
-        <div class="button_box" style="background-color: green;" onclick=AutoPlaceClick_handler()>Autoplace Mines!</div>
+        <div class="button_box" style="background-color: green;" onclick="location.href='#AutoPlcDlg'">Autoplace Mines!</div>
     </div>
 
     <div class="buttons_bar dragscroll" id="res_selector_bar" style="right: 2px; height: 500px; visibility: hidden;">
@@ -355,6 +363,26 @@ function AutoPlaceClick_handler () {
             <h2>Карта ресурсов игры Resources Game (resources-game.ch)</h2>
             <p>https://res.anti3z.ru</p>
             <p>#карта</p>
+      </div>
+    </div>
+
+
+    <div id="AutoPlcDlg" class="modalDialog">
+      <div style="width: 230px;">
+            <a href="#close" title="Закрыть" class="close">X</a>
+
+            <h2>Mines autoplacing</h2>
+            <p>Select minimum mine quality</p>
+            <div style="display: inline">
+                  <img src="img/m_0.png" alt="res" width="32" height="32" id="autoplace_res_img">
+                  <input type="range" min="0" max="100" id="qual_slider" oninput="QualitySlider_handler()" value="100">
+            </div>
+            <div id="qual_text" style="display: inline">100%</div>
+            <p>
+                <input type="button" value="Ok" style="width: 100px;" onclick=AutoPlaceClick_handler()>
+                <input type="button" value="Cancel" style="width: 100px;" onclick="location.href='#close'">
+            </p>
+
       </div>
     </div>
 
