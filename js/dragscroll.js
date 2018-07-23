@@ -48,7 +48,7 @@
         for (i = 0; i < dragged.length;) {
             (function(el, lastClientX, lastClientY, pushed){
                 el[addEventListener](
-                    'mousedown',
+                    mousedown,
                     el.md = function(e) {
                         pushed = 1;
                         if (e.targetTouches && (e.targetTouches.length >= 1)) {
@@ -62,11 +62,11 @@
                 );
 
                  _window[addEventListener](
-                     'mouseup', el.mu = function() {pushed = 0;}, 0
+                     mouseup, el.mu = function() {pushed = 0;}, 0
                  );
 
                 _window[addEventListener](
-                    'mousemove',
+                    mousemove,
                     el.mm = function(e, scroller) {
                         scroller = el.scroller||el;
                         if (pushed) {
