@@ -22,6 +22,8 @@
 #res_btn_12 {background-image: url("../img/r_12.png"); background-size: cover;}
 #res_btn_13 {background-image: url("../img/r_13.png"); background-size: cover;}
 
+#save_btn {background-image: url("../img/floppy.png"); background-size: cover;}
+
 #place_btn {
   float: left;
   margin-left: 3px;
@@ -41,7 +43,8 @@
 #tools_btn {
   float: right;
   margin-right: 3px;
-  background-color: gray;
+  background-image: url("../img/tool-box.png");
+  background-size: cover;
 }
 #res_btn {
   float: right;

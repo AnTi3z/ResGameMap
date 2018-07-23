@@ -5,13 +5,14 @@
   <meta charset="utf-8">
 
   <link rel="stylesheet" href="css/main_style.css" type="text/css">
-  <link rel="stylesheet" href="css/buttons.css" type="text/css">
+  <link rel="stylesheet" href="css/buttons.css?ver=120718c" type="text/css">
   <link rel="stylesheet" href="css/map_controls.css" type="text/css">
   <link rel="stylesheet" href="css/dialogs.css" type="text/css">
 
   <script src="https://maps.googleapis.com/maps/api/js?libraries=places"></script>
   <script src="js/geoloc.js"></script>
   <script src="js/dragscroll.js"></script>
+  <script src="js/clipboard.js"></script>
 
   <script>
     var map;
@@ -113,7 +114,7 @@ function getQuality(pnt) {
                         "&lng=" + pnt.lng().toFixed(6) + "&lat=" + pnt.lat().toFixed(6) +
                         "&resID=" + selectedResID, false);
         xhr.send();
-        return xhr.responseText;
+        return +xhr.responseText;
 }
 
 function addMine(pnt, quality, resID) {
@@ -238,18 +239,83 @@ function ToolsClick_handler(){
 }
 
 
-function SaveClick_handler() {
-      document.getElementById("tool_selector_bar").style.visibility = 'hidden';
+function SaveResetClick_handler() {
+      var pako = window.pako;
+      var SaveData = [];
+
+      //Проходим по всем установленным шахтам и сохраняем необходимые данные
+      for (var i = 0; i < cntMines; i++) {
+         SaveData.push({})
+         SaveData[i].res = Mines[i].resID
+         SaveData[i].qual = Mines[i].quality
+         SaveData[i].loc = Mines[i].getBounds().getCenter()
+      }
+
+      document.getElementById("save_text").value = btoa(pako.deflate(JSON.stringify(SaveData), { to: 'string' }));
+
+      SaveTextChanged()
 }
 
-function QualitySlider_handler() {
-      sliderValue = document.getElementById("qual_slider").value;
-      txt = document.getElementById("qual_text");
-      txt.innerHTML = sliderValue+ "%";
+function SaveCopyClick_handler() {
+     copyTextToClipboard(document.getElementById("save_text").value);
 }
 
-function LoadClick_handler() {
-      document.getElementById("tool_selector_bar").style.visibility = 'hidden';
+function SavePasteClick_handler() {
+   navigator.clipboard.readText()
+  .then(text => {
+    document.getElementById("save_text").value = text;
+    SaveTextChanged();
+  })
+  .catch(err => {
+    console.error('Could not paste text: ', err);
+  });
+}
+
+function SaveTextChanged() {
+   var pako = window.pako;
+
+   try {
+      var data = atob(document.getElementById("save_text").value);
+      var restored = JSON.parse(pako.inflate(data, { to: 'string' }));
+      document.getElementById("save_mines_cnt").innerHTML = restored.length + " mines"
+   } catch (err) {
+      document.getElementById("save_mines_cnt").innerHTML = "Corrupted data"
+   }
+}
+
+function LoadMines_handler () {
+   var pako = window.pako;
+
+   var restored = [];
+
+   try {
+      var data = atob(document.getElementById("save_text").value);
+      var restored = JSON.parse(pako.inflate(data, { to: 'string' }));
+   } catch (err) {
+      return;
+   }
+
+    //удалить шахты
+    if (document.getElementById("erease_cb").checked) {
+          for (var i = 0; i < Mines.length; i++){
+                Mines[i].setMap(null);
+                MineInfoWindow[i].close;
+
+          }
+
+          Mines = [];
+          MineInfoWindow = [];
+          cntMines = 0;
+    }
+
+
+    for (var i = 0; i < restored.length; i++) {
+       addMine(restored[i].loc, restored[i].qual, restored[i].res);
+    }
+
+    if (restored.length > 0) map.setCenter(restored[0].loc);
+
+    window.open("#close","_self")
 }
 
 function InfoClick_handler () {
@@ -277,9 +343,10 @@ function InfoClick_handler () {
       iWin.setPosition(map.getBounds().getCenter());
       iWin.setContent(txtResult);
       iWin.open(map);
+}
 
+function HideToolSelector () {
       document.getElementById("tool_selector_bar").style.visibility = 'hidden';
-
 }
 
 function AutoPlaceClick_handler () {
@@ -309,6 +376,11 @@ function AutoPlaceClick_handler () {
       window.open("#close","_self")
 }
 
+function QualitySlider_handler() {
+      sliderValue = document.getElementById("qual_slider").value;
+      document.getElementById("qual_text").innerHTML = sliderValue+ "%";
+}
+
 
   google.maps.event.addDomListener(window, 'load', initMap);
 
@@ -324,7 +396,7 @@ function AutoPlaceClick_handler () {
         <div style="width:100%; height:1px; clear:both;"></div>
         <div class="button_box" id="place_btn" onclick=PlaceClick_handler()></div>
         <div class="button_box" id="res_btn" onclick=ResClick_handler()><div class="res_btn_name" id="res_btn_text">Clay</div></div>
-        <div class="button_box" id="tools_btn" onclick=ToolsClick_handler()>Tools Menu</div>
+        <div class="button_box" id="tools_btn" onclick=ToolsClick_handler()></div>
         <div class="button_box" id="scan_btn" onclick=ScanClick_handler()>
           <a style="vertical-align: middle; font: bold 13px Arial; color: white;">Scan location<br>
           (Costs: FREE!)</a>
@@ -333,11 +405,10 @@ function AutoPlaceClick_handler () {
         <div style="width:100%; height:1px; clear:both;"></div>
     </div>
 
-    <div class="buttons_bar dragscroll" id="tool_selector_bar" style="right: 80px; height: 301px; visibility: hidden;">
-        <div class="button_box" style="background-color: blue;" onclick=SaveClick_handler()>Save Mines</div>
-        <div class="button_box" style="background-color: red;" onclick=LoadClick_handler()>Load Mines</div>
-        <div class="button_box" style="background-color: yellow;" onclick=InfoClick_handler()>Placed Mines Info!</div>
-        <div class="button_box" style="background-color: green;" onclick="location.href='#AutoPlcDlg'">Autoplace Mines!</div>
+    <div class="buttons_bar dragscroll" id="tool_selector_bar" style="right: 80px; height: 226px; visibility: hidden;">
+        <div class="button_box" id="save_btn" onclick="HideToolSelector();SaveResetClick_handler();location.href='#SaveDlg'"></div>
+        <div class="button_box" style="background-color: yellow;" onclick="HideToolSelector();InfoClick_handler()">Placed Mines Info!</div>
+        <div class="button_box" style="background-color: green;" onclick="HideToolSelector();location.href='#AutoPlcDlg'">Autoplace Mines!</div>
     </div>
 
     <div class="buttons_bar dragscroll" id="res_selector_bar" style="right: 2px; height: 500px; visibility: hidden;">
@@ -358,17 +429,31 @@ function AutoPlaceClick_handler () {
     </div>
 
     <div id="SaveDlg" class="modalDialog">
-      <div>
+      <div style="width: 285px;">
             <a href="#close" title="Закрыть" class="close">X</a>
-            <h2>Карта ресурсов игры Resources Game (resources-game.ch)</h2>
-            <p>https://res.anti3z.ru</p>
-            <p>#карта</p>
+            <h3>Save/load mines configuration</h2>
+            <label><input id="erease_cb" type="checkbox" checked>Erase existing mines</label>
+
+            <div style="display: inline-block;">
+               <textarea rows="10" cols="25" id="save_text" oninput=SaveTextChanged() style="resize: none;"></textarea>
+               <p id="save_mines_cnt" style="margin: 0px">0 mines</p>
+            </div>
+            <div style="display: inline-block; vertical-align: top;">
+               <p><button onclick=SaveResetClick_handler() style="width: 60px;">Reset</button></p>
+               <p><button onclick=SaveCopyClick_handler() style="width: 60px;">Copy</button></p>
+               <p><button onclick=SavePasteClick_handler() style="width: 60px;">Paste</button></p>
+            </div>
+
+            <p>
+                <button style="width: 100px;" onclick=LoadMines_handler()>Ok</button>
+                <button style="width: 100px;" onclick="location.href='#close'">Cancel</button>
+            </p>
       </div>
     </div>
 
 
     <div id="AutoPlcDlg" class="modalDialog">
-      <div style="width: 230px;">
+      <div style="width: 220px;">
             <a href="#close" title="Закрыть" class="close">X</a>
 
             <h2>Mines autoplacing</h2>
@@ -379,8 +464,8 @@ function AutoPlaceClick_handler () {
             </div>
             <div id="qual_text" style="display: inline">100%</div>
             <p>
-                <input type="button" value="Ok" style="width: 100px;" onclick=AutoPlaceClick_handler()>
-                <input type="button" value="Cancel" style="width: 100px;" onclick="location.href='#close'">
+                <button style="width: 100px;" onclick=AutoPlaceClick_handler()>Ok</button>
+                <button style="width: 100px;" onclick="location.href='#close'">Cancel</button>
             </p>
 
       </div>
