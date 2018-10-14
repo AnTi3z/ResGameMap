@@ -5,8 +5,11 @@ html, body {
 }
 
 #map_canvas {
-  height: 90%;
+  height: 92%;
+  z-index: 1;
+  cursor: crosshair;
 }
+
 
 .buttons_bar {
   position: absolute;
@@ -16,6 +19,7 @@ html, body {
   background-color: black;
   overflow: hidden;
   border-radius: 4px;
+  z-index: 3;
 }
 
 #info_bar {
@@ -27,6 +31,7 @@ html, body {
   text-align: center;
   color: white;
   font: bold 13px Arial;
+  z-index: 2;
 }
 #bottom_menu {
   position: absolute;
@@ -34,4 +39,27 @@ html, body {
   height: 80px;
   width: 100%;
   bottom: 0;
+  z-index: 3;
 }
+
+@keyframes blink {
+  50% {
+    opacity: 0.0;
+  }
+}
+@-webkit-keyframes blink {
+  50% {
+    opacity: 0.0;
+  }
+}
+.state-located{
+  color: #6666ff; }
+.state-loc-disabled{
+  opacity: 0.2;
+  color: #000000; }
+.state-locating{
+  animation: blink 1s step-start 0s infinite;
+  -webkit-animation: blink 1s step-start 0s infinite;
+  color: #000000; }
+.state-loc-ready{
+  color: #000000; }
